@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28010.2050
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DupFileCleaner", "WpfTemplateProject\DupFileCleaner.csproj", "{1FD7A9CB-47F9-442E-AD5D-29DC63F8C454}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "DupsCleanerInstaller", "DupsCleanerInstaller\DupsCleanerInstaller.vdproj", "{ABDE0D89-4831-4534-AAE2-CA15D7F109B3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,12 @@ Global
 		{1FD7A9CB-47F9-442E-AD5D-29DC63F8C454}.Release|x64.Build.0 = Release|x64
 		{1FD7A9CB-47F9-442E-AD5D-29DC63F8C454}.Release|x86.ActiveCfg = Release|x86
 		{1FD7A9CB-47F9-442E-AD5D-29DC63F8C454}.Release|x86.Build.0 = Release|x86
+		{ABDE0D89-4831-4534-AAE2-CA15D7F109B3}.Debug|Any CPU.ActiveCfg = Debug
+		{ABDE0D89-4831-4534-AAE2-CA15D7F109B3}.Debug|x64.ActiveCfg = Debug
+		{ABDE0D89-4831-4534-AAE2-CA15D7F109B3}.Debug|x86.ActiveCfg = Debug
+		{ABDE0D89-4831-4534-AAE2-CA15D7F109B3}.Release|Any CPU.ActiveCfg = Release
+		{ABDE0D89-4831-4534-AAE2-CA15D7F109B3}.Release|x64.ActiveCfg = Release
+		{ABDE0D89-4831-4534-AAE2-CA15D7F109B3}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -11,7 +11,6 @@ using Caliburn.Micro;
 using DupFileCleaner.Views;
 using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
-using Xceed.Words.NET;
 using Action = System.Action;
 
 namespace DupFileCleaner.ViewModels
@@ -97,14 +96,20 @@ namespace DupFileCleaner.ViewModels
 
         private void ProcessFiles(string[] files)
         {
+            if (!files.Any())
+                return;
+
+            var folder = Path.GetDirectoryName(files[0]);
+
             var myFiles = files.Select(s => new MyFile(s))
                 .Where(file => !string.IsNullOrWhiteSpace(file.FileVersion))
-                .GroupBy(file => file.FilenameOnlyWithoutVersion).ToList();
+                .GroupBy(file => file.FilenameOnlyWithoutVersion + file.FileExtention).ToList();
 
             foreach (var myFile in myFiles)
             {
                 var sortedFiles = myFile.OrderByDescending(file => file.FileVersion).ToArray();
-                for (int i = sortedFiles.Length; i-- > 1;)
+
+                for (int i = sortedFiles.Length; i-- > (File.Exists(Path.Combine(folder, myFile.Key)) ? 0 : 1);)
                 {
 
                     File.Delete(sortedFiles[i].FullName);
