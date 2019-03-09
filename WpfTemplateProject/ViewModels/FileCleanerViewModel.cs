@@ -85,18 +85,19 @@ namespace DupFileCleaner.ViewModels
 
         public Task ProcessFolder(string startFolder)
         {
-
-
             if (FindAndDeleteVxOnly)
             {
+                Debug.WriteLine($"Processing folder {startFolder}");
                 var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.AllDirectories);
                 return Task.Run(() =>
                 {
                     foreach (var file in files)
                     {
                         File.Delete(file);
-                        Debug.WriteLine($"\tFile Deleted {file}");
+                        //Debug.WriteLine($"\tFile Deleted {file}");
                     }
+
+                    Debug.WriteLine($"Done processing folder {startFolder}");
                 });
             }
 
