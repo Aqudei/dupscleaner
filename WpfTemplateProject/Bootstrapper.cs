@@ -24,7 +24,6 @@ namespace DupFileCleaner
 
         protected override void Configure()
         {
-            
             _container.RegisterSingleton<IEventAggregator, EventAggregator>();
             _container.RegisterType<IWindowManager, WindowManager>();
             base.Configure();

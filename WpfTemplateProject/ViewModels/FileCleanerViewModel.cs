@@ -22,6 +22,9 @@ namespace DupFileCleaner.ViewModels
         private bool _isBusy;
         private TextBox _logsTextBox;
         private bool _findAndDeleteVxOnly;
+        private string _trash;
+
+        private readonly bool _deferredDelete = false;
 
         public string Logs
         {
@@ -68,23 +71,26 @@ namespace DupFileCleaner.ViewModels
         {
             _logsTextBox.Clear();
 
-            IsBusy = true;
-            await ProcessFolder(Folder);
-            IsBusy = false;
+            _trash = Path.Combine(Path.GetDirectoryName(Folder), "trash");
+            Directory.CreateDirectory(_trash);
 
+            IsBusy = true;
+
+            await ProcessFolder(Folder);
+            await Task.Run(() => Directory.Delete(_trash, true));
+
+            IsBusy = false;
             Debug.WriteLine("Operation Completed");
-            Execute.OnUIThread(() => _logsTextBox?.ScrollToEnd());
         }
 
         public Task ProcessFolder(string startFolder)
         {
-            Debug.WriteLine("Processing Folder: " + startFolder);
+            var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.AllDirectories);
 
             if (FindAndDeleteVxOnly)
             {
                 return Task.Run(() =>
                 {
-                    var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.AllDirectories);
                     foreach (var file in files)
                     {
                         File.Delete(file);
@@ -95,12 +101,12 @@ namespace DupFileCleaner.ViewModels
 
             return Task.Run(() =>
             {
-
-                var files = Directory.EnumerateFiles(startFolder, "*.*", SearchOption.TopDirectoryOnly);
+                //var files = Directory.EnumerateFiles(startFolder, "*.*", SearchOption.TopDirectoryOnly);
                 ProcessFiles(startFolder, files);
 
                 var tasks = new List<Task>();
-                var folders = Directory.GetDirectories(startFolder);
+                var folders = Directory.EnumerateDirectories(startFolder);
+
                 foreach (var folder in folders)
                 {
                     tasks.Add(ProcessFolder(folder));
@@ -118,7 +124,6 @@ namespace DupFileCleaner.ViewModels
 
         private void ProcessFiles(string folder, IEnumerable<string> files)
         {
-
             var myFiles = files.Select(s => new MyFile(s))
                 .Where(file => !string.IsNullOrWhiteSpace(file.FileVersion))
                 .GroupBy(file => file.FilenameOnlyWithoutVersion + file.FileExtention);
@@ -129,10 +134,14 @@ namespace DupFileCleaner.ViewModels
 
                 for (int i = sortedFiles.Length; i-- > (File.Exists(Path.Combine(folder, myFile.Key)) ? 0 : 1);)
                 {
-
-                    File.Delete(sortedFiles[i].FullName);
-                    Debug.WriteLine($"\tFile Deleted {sortedFiles[i].FullName}");
+                    if (!_deferredDelete)
+                        File.Delete(sortedFiles[i].FullName);
+                    else
+                        File.Move(sortedFiles[i].FullName, Path.Combine(_trash,
+                            Guid.NewGuid().ToString()));
                 }
+
+                Debug.WriteLine($"\tDone processing file group {sortedFiles[0].FilenameOnlyWithoutVersion}.");
             }
         }
 
@@ -154,7 +163,7 @@ namespace DupFileCleaner.ViewModels
 
                 Debug.Listeners.Add(new DebugListener(s =>
                 {
-                    Dispatcher.CurrentDispatcher.Invoke(DispatcherPriority.Background, new Action(() =>
+                    Dispatcher.CurrentDispatcher.Invoke(DispatcherPriority.ApplicationIdle, new Action(() =>
                     {
                         Logs = Logs + s;
                     }));

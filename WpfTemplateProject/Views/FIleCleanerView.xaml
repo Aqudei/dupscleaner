@@ -45,6 +45,11 @@
                         x:Name="StartProcessing"
                         HorizontalAlignment="Right"
                         Content="Process Folder" Margin="4" Width="106" HorizontalContentAlignment="Center" />
+                    <Button 
+                        Visibility="Collapsed"
+                        x:Name="ViewLogsFolder"
+                        HorizontalAlignment="Right"
+                        Content="View Logs Folder" Margin="4" Width="106" HorizontalContentAlignment="Center" />
                 </StackPanel>
             </Grid>
         </GroupBox>
