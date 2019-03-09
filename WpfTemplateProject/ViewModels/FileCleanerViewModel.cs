@@ -85,10 +85,11 @@ namespace DupFileCleaner.ViewModels
 
         public Task ProcessFolder(string startFolder)
         {
-            var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.AllDirectories);
+
 
             if (FindAndDeleteVxOnly)
             {
+                var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.AllDirectories);
                 return Task.Run(() =>
                 {
                     foreach (var file in files)
@@ -101,7 +102,7 @@ namespace DupFileCleaner.ViewModels
 
             return Task.Run(() =>
             {
-                //var files = Directory.EnumerateFiles(startFolder, "*.*", SearchOption.TopDirectoryOnly);
+                var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.TopDirectoryOnly);
                 ProcessFiles(startFolder, files);
 
                 var tasks = new List<Task>();
@@ -140,9 +141,9 @@ namespace DupFileCleaner.ViewModels
                         File.Move(sortedFiles[i].FullName, Path.Combine(_trash,
                             Guid.NewGuid().ToString()));
                 }
-
-                Debug.WriteLine($"\tDone processing file group {sortedFiles[0].FilenameOnlyWithoutVersion}.");
             }
+
+            Debug.WriteLine($"\tDone processing folder {folder}");
         }
 
         public string Folder
