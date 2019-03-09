@@ -36,6 +36,7 @@
                          Grid.Column="1"
                          Text="TextBox" Margin="4"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Right">
+                    <CheckBox x:Name="FindAndDeleteVxOnly" Margin="0,0,16,0">Find and Delete "_Vxx" only</CheckBox>
                     <Button 
                         x:Name="SelectFolder"
                         HorizontalAlignment="Right"

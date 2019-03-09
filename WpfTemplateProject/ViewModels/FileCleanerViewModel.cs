@@ -21,6 +21,7 @@ namespace DupFileCleaner.ViewModels
         private string _logs = "";
         private bool _isBusy;
         private TextBox _logsTextBox;
+        private bool _findAndDeleteVxOnly;
 
         public string Logs
         {
@@ -77,11 +78,26 @@ namespace DupFileCleaner.ViewModels
 
         public Task ProcessFolder(string startFolder)
         {
+            Debug.WriteLine("Processing Folder: " + startFolder);
+
+            if (FindAndDeleteVxOnly)
+            {
+                return Task.Run(() =>
+                {
+                    var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.AllDirectories);
+                    foreach (var file in files)
+                    {
+                        File.Delete(file);
+                        Debug.WriteLine($"\tFile Deleted {file}");
+                    }
+                });
+            }
+
             return Task.Run(() =>
             {
-                Debug.WriteLine("Processing Folder: " + startFolder);
-                var files = Directory.GetFiles(startFolder, "*.*", SearchOption.TopDirectoryOnly);
-                ProcessFiles(files);
+
+                var files = Directory.EnumerateFiles(startFolder, "*.*", SearchOption.TopDirectoryOnly);
+                ProcessFiles(startFolder, files);
 
                 var tasks = new List<Task>();
                 var folders = Directory.GetDirectories(startFolder);
@@ -94,16 +110,18 @@ namespace DupFileCleaner.ViewModels
             });
         }
 
-        private void ProcessFiles(string[] files)
+        public bool FindAndDeleteVxOnly
         {
-            if (!files.Any())
-                return;
+            get => _findAndDeleteVxOnly;
+            set => Set(ref _findAndDeleteVxOnly, value);
+        }
 
-            var folder = Path.GetDirectoryName(files[0]);
+        private void ProcessFiles(string folder, IEnumerable<string> files)
+        {
 
             var myFiles = files.Select(s => new MyFile(s))
                 .Where(file => !string.IsNullOrWhiteSpace(file.FileVersion))
-                .GroupBy(file => file.FilenameOnlyWithoutVersion + file.FileExtention).ToList();
+                .GroupBy(file => file.FilenameOnlyWithoutVersion + file.FileExtention);
 
             foreach (var myFile in myFiles)
             {
