@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -100,12 +101,13 @@ namespace DupFileCleaner.ViewModels
                     try
                     {
                         var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.AllDirectories);
-
+                        var rgx = new Regex(@"_(v\d+)\.", RegexOptions.IgnoreCase);
                         foreach (var file in files)
                         {
                             try
                             {
-                                File.Delete(file);
+                                if (rgx.IsMatch(Path.GetFileName(file)))
+                                    File.Delete(file);
                                 //Debug.WriteLine($"\tFile Deleted {file}");
                             }
                             catch (Exception e)
