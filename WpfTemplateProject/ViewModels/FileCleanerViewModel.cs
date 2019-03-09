@@ -111,7 +111,7 @@ namespace DupFileCleaner.ViewModels
                             catch (Exception e)
                             {
                                 Debug.WriteLine($"Error in file {file}");
-                                Debug.WriteLine(e);
+                                Debug.WriteLine(e.Message);
                             }
                         }
                     }
@@ -127,18 +127,27 @@ namespace DupFileCleaner.ViewModels
 
             return Task.Run(() =>
             {
-                var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.TopDirectoryOnly);
-                ProcessFiles(startFolder, files);
 
-                var tasks = new List<Task>();
-                var folders = Directory.EnumerateDirectories(startFolder);
-
-                foreach (var folder in folders)
+                try
                 {
-                    tasks.Add(ProcessFolder(folder));
-                }
+                    var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.TopDirectoryOnly);
+                    ProcessFiles(startFolder, files);
 
-                Task.WaitAll(tasks.ToArray());
+                    var tasks = new List<Task>();
+                    var folders = Directory.EnumerateDirectories(startFolder);
+
+                    foreach (var folder in folders)
+                    {
+                        tasks.Add(ProcessFolder(folder));
+                    }
+
+                    Task.WaitAll(tasks.ToArray());
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine($"Something went wrong while processing folder: {startFolder}");
+                    Debug.WriteLine(e.Message);
+                }
             });
         }
 
@@ -150,25 +159,32 @@ namespace DupFileCleaner.ViewModels
 
         private void ProcessFiles(string folder, IEnumerable<string> files)
         {
-            var myFiles = files.Select(s => new MyFile(s))
-                .Where(file => !string.IsNullOrWhiteSpace(file.FileVersion))
-                .GroupBy(file => file.FilenameOnlyWithoutVersion + file.FileExtention);
-
-            foreach (var myFile in myFiles)
+            try
             {
-                var sortedFiles = myFile.OrderByDescending(file => file.FileVersion).ToArray();
+                var myFiles = files.Select(s => new MyFile(s))
+                    .Where(file => !string.IsNullOrWhiteSpace(file.FileVersion))
+                    .GroupBy(file => file.FilenameOnlyWithoutVersion + file.FileExtention);
 
-                for (int i = sortedFiles.Length; i-- > (File.Exists(Path.Combine(folder, myFile.Key)) ? 0 : 1);)
+                foreach (var myFile in myFiles)
                 {
-                    if (!_deferredDelete)
-                        File.Delete(sortedFiles[i].FullName);
-                    else
-                        File.Move(sortedFiles[i].FullName, Path.Combine(_trash,
-                            Guid.NewGuid().ToString()));
-                }
-            }
+                    var sortedFiles = myFile.OrderByDescending(file => file.FileVersion).ToArray();
 
-            Debug.WriteLine($"\tDone processing folder {folder}");
+                    for (int i = sortedFiles.Length; i-- > (File.Exists(Path.Combine(folder, myFile.Key)) ? 0 : 1);)
+                    {
+                        if (!_deferredDelete)
+                            File.Delete(sortedFiles[i].FullName);
+                        else
+                            File.Move(sortedFiles[i].FullName, Path.Combine(_trash,
+                                Guid.NewGuid().ToString()));
+                    }
+                }
+
+                Debug.WriteLine($"\tDone processing folder {folder}");
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+            }
         }
 
         public string Folder
