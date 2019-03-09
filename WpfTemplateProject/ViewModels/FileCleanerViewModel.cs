@@ -71,13 +71,20 @@ namespace DupFileCleaner.ViewModels
         {
             _logsTextBox.Clear();
 
-            _trash = Path.Combine(Path.GetDirectoryName(Folder), "trash");
-            Directory.CreateDirectory(_trash);
+            if (_deferredDelete)
+            {
+                _trash = Path.Combine(Path.GetDirectoryName(Folder), "trash");
+                Directory.CreateDirectory(_trash);
+            }
 
             IsBusy = true;
 
             await ProcessFolder(Folder);
-            await Task.Run(() => Directory.Delete(_trash, true));
+
+            if (_deferredDelete)
+            {
+                await Task.Run(() => Directory.Delete(_trash, true));
+            }
 
             IsBusy = false;
             Debug.WriteLine("Operation Completed");
