@@ -97,19 +97,28 @@ namespace DupFileCleaner.ViewModels
                 return Task.Run(() =>
                 {
                     Debug.WriteLine($"Processing folder {startFolder}");
-                    var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.AllDirectories);
-
-                    foreach (var file in files)
+                    try
                     {
-                        try
+                        var files = Directory.EnumerateFiles(startFolder, "*_V*.*", SearchOption.AllDirectories);
+
+                        foreach (var file in files)
                         {
-                            File.Delete(file);
-                            //Debug.WriteLine($"\tFile Deleted {file}");
+                            try
+                            {
+                                File.Delete(file);
+                                //Debug.WriteLine($"\tFile Deleted {file}");
+                            }
+                            catch (Exception e)
+                            {
+                                Debug.WriteLine($"Error in file {file}");
+                                Debug.WriteLine(e);
+                            }
                         }
-                        catch (Exception e)
-                        {
-                            Debug.WriteLine(e);
-                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.WriteLine($"Something went wrong while processing folder: {startFolder}");
+                        Debug.WriteLine(exception.Message);
                     }
 
                     Debug.WriteLine($"Done processing folder {startFolder}");
