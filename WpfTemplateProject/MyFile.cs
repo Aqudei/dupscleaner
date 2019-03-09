@@ -17,7 +17,7 @@ namespace DupFileCleaner
             Folder = Path.GetDirectoryName(filename);
             FilenameOnlyWithoutVersion = GetFilenameWithoutVersion(Path.GetFileName(filename));
             FileExtention = Path.GetExtension(filename);
-            FileVersion = GetFileVersion(Path.GetFileName(filename));
+            FileVersion = filename.Contains("~") ? string.Empty : GetFileVersion(Path.GetFileName(filename));
             FullName = filename;
         }
 
