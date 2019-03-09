@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
-        Title="Duplicate Cleaner" Height="600" Width="800">
+        Title="Duplicate Cleaner (March 9, 2019 13:31 PH)" Height="600" Width="800">
     <Grid>
         <mah:MetroAnimatedSingleRowTabControl x:Name="Items"/>
     </Grid>
