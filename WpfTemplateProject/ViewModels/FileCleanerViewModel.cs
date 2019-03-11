@@ -206,6 +206,104 @@ namespace DupFileCleaner.ViewModels
 
         public bool CanSwapFolderLevels => !string.IsNullOrWhiteSpace(Folder) && !IsBusy
                                                                               && Directory.Exists(Folder);
+        //public async Task SwapFolderLevels()
+        //{
+        //    if (!Path.GetFileName(Folder).ToUpper().Contains("CLIENT FILES"))
+        //    {
+        //        await _dialogCoordinator.ShowMessageAsync(this, "Cannot proceed",
+        //            "Please point the input folder to your 'CLIENT FILES' location");
+
+        //        return;
+        //    }
+
+        //    var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DupCleaner");
+        //    var rgxDigit = new Regex(@"\d\d\d\d");
+        //    var files = Directory.EnumerateFiles(Folder, "*.*", SearchOption.AllDirectories);
+        //    var permanents = new HashSet<string>();
+
+        //    foreach (var file in files)
+        //    {
+        //        var folderParts = file.Replace(Folder, "").Trim("\\/".ToCharArray()).Split("\\/".ToCharArray());
+
+        //        //if (folderParts.Length < 2 || !rgxDigit.IsMatch(folderParts[1]))
+        //        if (folderParts.Length < 2)
+        //            continue;
+
+        //        var tmp = folderParts[0];
+        //        if (!rgxDigit.IsMatch(folderParts[1]))
+        //        {
+        //            permanents.Add(folderParts[1]);
+        //        }
+
+        //        folderParts[0] = folderParts[1];
+        //        folderParts[1] = tmp;
+        //        var newPath = Path.Combine(Folder, Path.Combine(folderParts));
+
+        //        Directory.CreateDirectory(Path.GetDirectoryName(newPath));
+
+        //        if (file.ToUpper() == newPath.ToUpper())
+        //            continue;
+
+        //        File.Move(file, newPath);
+        //    }
+
+        //    //CLeanup
+        //    var folders = Directory.EnumerateDirectories(Folder);
+        //    foreach (var folder in folders)
+        //    {
+        //        var folderName = Path.GetFileName(folder);
+        //        if (rgxDigit.IsMatch(folderName) || permanents.Contains(folderName))
+        //            continue;
+        //        try
+        //        {
+        //            Directory.Delete(folder, true);
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            Debug.WriteLine(e.Message);
+        //        }
+        //    }
+
+        //    await _dialogCoordinator.ShowMessageAsync(this, "Done", "Operation completed");
+        //}
+
+        private void MoveFile(string source, string destination)
+        {
+            try
+            {
+                if (source.ToUpper() == destination.ToUpper())
+                    return;
+
+                var directory = Path.GetDirectoryName(source);
+                Directory.CreateDirectory(directory);
+
+                File.Move(source, destination);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine($"Cannot move {source} to {destination} because\n{e.Message}");
+            }
+        }
+
+        private void RoboCopy(string sourceFolder, string destinationFolder)
+        {
+            Directory.CreateDirectory(destinationFolder);
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "robocopy.exe",
+                Arguments = $"\"{sourceFolder}\" \"{destinationFolder}\" *.* /E",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+
+            using (var process = Process.Start(startInfo))
+            {
+                process.WaitForExit();
+                process.Close();
+            }
+        }
+
         public async Task SwapFolderLevels()
         {
             if (!Path.GetFileName(Folder).ToUpper().Contains("CLIENT FILES"))
@@ -216,57 +314,51 @@ namespace DupFileCleaner.ViewModels
                 return;
             }
 
-            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DupCleaner");
             var rgxDigit = new Regex(@"\d\d\d\d");
-            var files = Directory.EnumerateFiles(Folder, "*.*", SearchOption.AllDirectories);
-            var permanents = new HashSet<string>();
-
-            foreach (var file in files)
+            var clients = Directory.EnumerateDirectories(Folder, "*", SearchOption.TopDirectoryOnly);
+            foreach (var client in clients)
             {
-                var folderParts = file.Replace(Folder, "").Trim("\\/".ToCharArray()).Split("\\/".ToCharArray());
-
-                //if (folderParts.Length < 2 || !rgxDigit.IsMatch(folderParts[1]))
-                if (folderParts.Length < 2)
+                var clientCode = Path.GetFileName(client);
+                if (rgxDigit.IsMatch(clientCode) || clientCode == "Permanent")
                     continue;
 
-                var tmp = folderParts[0];
-                if (!rgxDigit.IsMatch(folderParts[1]))
+                var clientFiles = Directory.EnumerateFiles(client, "*.*", SearchOption.TopDirectoryOnly);
+                var clientFolders = Directory.EnumerateDirectories(client, "*", SearchOption.TopDirectoryOnly);
+
+                foreach (var clientFile in clientFiles)
                 {
-                    permanents.Add(folderParts[1]);
+                    MoveFile(clientFile, Path.Combine(Folder, "Permanent", clientCode));
                 }
 
-                folderParts[0] = folderParts[1];
-                folderParts[1] = tmp;
-                var newPath = Path.Combine(Folder, Path.Combine(folderParts));
-
-                Directory.CreateDirectory(Path.GetDirectoryName(newPath));
-
-                if (file.ToUpper() == newPath.ToUpper())
-                    continue;
-
-                File.Move(file, newPath);
-            }
-
-            //CLeanup
-            var folders = Directory.EnumerateDirectories(Folder);
-            foreach (var folder in folders)
-            {
-                var folderName = Path.GetFileName(folder);
-                if (rgxDigit.IsMatch(folderName) || permanents.Contains(folderName))
-                    continue;
-                try
+                foreach (var clientFolder in clientFolders)
                 {
-                    Directory.Delete(folder, true);
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e.Message);
+                    var lastPath = Path.GetFileName(clientFolder).Trim();
+                    if (rgxDigit.IsMatch(lastPath))
+                    {
+                        var year = rgxDigit.Match(lastPath);
+                        RoboCopy(clientFolder, Path.Combine(Folder, year.Groups[0].Value, clientCode));
+                    }
+                    else if (lastPath.ToLower() == "permanent")
+                    {
+                        RoboCopy(clientFolder, Path.Combine(Folder, "Permanent", clientCode));
+                    }
+                    else
+                    {
+                        RoboCopy(clientFolder, Path.Combine(Folder, "Permanent", clientCode, lastPath));
+                    }
                 }
             }
+            // Cleanup
 
-            await _dialogCoordinator.ShowMessageAsync(this, "Done", "Operation completed");
+            var directories = Directory.EnumerateDirectories(Folder);
+            foreach (var directory in directories)
+            {
+                var lastPart = Path.GetFileName(directory);
+                if (lastPart.Contains("Permanent") || rgxDigit.IsMatch(lastPart))
+                    continue;
+                Directory.Delete(directory, true);
+            }
         }
-
         protected override void OnViewReady(object view)
         {
             if (view is FileCleanerView fileCleanerView)
