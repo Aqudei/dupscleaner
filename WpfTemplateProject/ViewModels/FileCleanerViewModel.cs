@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using Caliburn.Micro;
 using DupFileCleaner.Views;
+using MahApps.Metro.Controls.Dialogs;
 using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Action = System.Action;
@@ -18,6 +19,7 @@ namespace DupFileCleaner.ViewModels
 {
     sealed class FileCleanerViewModel : Screen
     {
+        private readonly IDialogCoordinator _dialogCoordinator;
         private string _folder;
         private string _logs = "";
         private bool _isBusy;
@@ -41,16 +43,17 @@ namespace DupFileCleaner.ViewModels
                 Set(ref _isBusy, value);
                 NotifyOfPropertyChange(nameof(CanStartProcessing));
                 NotifyOfPropertyChange(nameof(CanSelectFolder));
+                NotifyOfPropertyChange(nameof(CanSwapFolderLevels));
             }
         }
 
         public bool CanSelectFolder => !IsBusy;
 
-        public FileCleanerViewModel()
+        public FileCleanerViewModel(IDialogCoordinator dialogCoordinator)
         {
+            _dialogCoordinator = dialogCoordinator;
             DisplayName = "File Cleaner";
             //Execute.OnUIThread(() => Logs = Logs + s))
-
         }
 
         public void SelectFolder()
@@ -196,7 +199,72 @@ namespace DupFileCleaner.ViewModels
             {
                 Set(ref _folder, value);
                 NotifyOfPropertyChange(nameof(CanStartProcessing));
+                NotifyOfPropertyChange(nameof(CanSwapFolderLevels));
             }
+        }
+
+
+        public bool CanSwapFolderLevels => !string.IsNullOrWhiteSpace(Folder) && !IsBusy
+                                                                              && Directory.Exists(Folder);
+        public async Task SwapFolderLevels()
+        {
+            if (!Path.GetFileName(Folder).ToUpper().Contains("CLIENT FILES"))
+            {
+                await _dialogCoordinator.ShowMessageAsync(this, "Cannot proceed",
+                    "Please point the input folder to your 'CLIENT FILES' location");
+
+                return;
+            }
+
+            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DupCleaner");
+            var rgxDigit = new Regex(@"\d\d\d\d");
+            var files = Directory.EnumerateFiles(Folder, "*.*", SearchOption.AllDirectories);
+            var permanents = new HashSet<string>();
+
+            foreach (var file in files)
+            {
+                var folderParts = file.Replace(Folder, "").Trim("\\/".ToCharArray()).Split("\\/".ToCharArray());
+
+                //if (folderParts.Length < 2 || !rgxDigit.IsMatch(folderParts[1]))
+                if (folderParts.Length < 2)
+                    continue;
+
+                var tmp = folderParts[0];
+                if (!rgxDigit.IsMatch(folderParts[1]))
+                {
+                    permanents.Add(folderParts[1]);
+                }
+
+                folderParts[0] = folderParts[1];
+                folderParts[1] = tmp;
+                var newPath = Path.Combine(Folder, Path.Combine(folderParts));
+
+                Directory.CreateDirectory(Path.GetDirectoryName(newPath));
+
+                if (file.ToUpper() == newPath.ToUpper())
+                    continue;
+
+                File.Move(file, newPath);
+            }
+
+            //CLeanup
+            var folders = Directory.EnumerateDirectories(Folder);
+            foreach (var folder in folders)
+            {
+                var folderName = Path.GetFileName(folder);
+                if (rgxDigit.IsMatch(folderName) || permanents.Contains(folderName))
+                    continue;
+                try
+                {
+                    Directory.Delete(folder, true);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e.Message);
+                }
+            }
+
+            await _dialogCoordinator.ShowMessageAsync(this, "Done", "Operation completed");
         }
 
         protected override void OnViewReady(object view)

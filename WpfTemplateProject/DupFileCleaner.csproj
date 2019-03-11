@@ -92,10 +92,10 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>25C34FEC24FCE722FA1FCCF28933457F1F523FA6</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>BCCCEBAF409468DCE23D0B3438BCBD8B0C1DE0D3</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>DupFileCleaner_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>DupFileCleaner_1_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <GenerateManifests>true</GenerateManifests>

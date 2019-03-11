@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Windows;
 using Caliburn.Micro;
 using DupFileCleaner.ViewModels;
+using MahApps.Metro.Controls.Dialogs;
 using Unity;
 
 namespace DupFileCleaner
@@ -24,6 +25,7 @@ namespace DupFileCleaner
 
         protected override void Configure()
         {
+            _container.RegisterInstance(DialogCoordinator.Instance);
             _container.RegisterSingleton<IEventAggregator, EventAggregator>();
             _container.RegisterType<IWindowManager, WindowManager>();
             base.Configure();

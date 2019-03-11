@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls" 
+             mah:DialogParticipation.Register="{Binding}"
              xmlns:local="clr-namespace:DupFileCleaner.Views"
              mc:Ignorable="d" 
              d:DesignHeight="485.8" d:DesignWidth="506">
@@ -44,12 +45,13 @@
                     <Button 
                         x:Name="StartProcessing"
                         HorizontalAlignment="Right"
-                        Content="Process Folder" Margin="4" Width="106" HorizontalContentAlignment="Center" />
+                        Content="Process Folder" Margin="4" 
+                        HorizontalContentAlignment="Center" />
                     <Button 
-                        Visibility="Collapsed"
-                        x:Name="ViewLogsFolder"
+                        x:Name="SwapFolderLevels"
                         HorizontalAlignment="Right"
-                        Content="View Logs Folder" Margin="4" Width="106" HorizontalContentAlignment="Center" />
+                        Content="Swap Folder Levels" Margin="4"
+                        HorizontalContentAlignment="Center" />
                 </StackPanel>
             </Grid>
         </GroupBox>
