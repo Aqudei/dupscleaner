@@ -287,6 +287,8 @@ namespace DupFileCleaner.ViewModels
 
         private void RoboCopy(string sourceFolder, string destinationFolder)
         {
+            Debug.WriteLine($"Running RoboCopy... Copy from {sourceFolder} to {destinationFolder}");
+
             Directory.CreateDirectory(destinationFolder);
             var startInfo = new ProcessStartInfo
             {
@@ -314,49 +316,61 @@ namespace DupFileCleaner.ViewModels
                 return;
             }
 
-            var rgxDigit = new Regex(@"\d\d\d\d");
-            var clients = Directory.EnumerateDirectories(Folder, "*", SearchOption.TopDirectoryOnly);
-            foreach (var client in clients)
+            try
             {
-                var clientCode = Path.GetFileName(client);
-                if (rgxDigit.IsMatch(clientCode) || clientCode == "Permanent")
-                    continue;
+                Debug.WriteLine("Swap operation started.");
 
-                var clientFiles = Directory.EnumerateFiles(client, "*.*", SearchOption.TopDirectoryOnly);
-                var clientFolders = Directory.EnumerateDirectories(client, "*", SearchOption.TopDirectoryOnly);
-
-                foreach (var clientFile in clientFiles)
+                var rgxDigit = new Regex(@"\d\d\d\d");
+                var clients = Directory.EnumerateDirectories(Folder, "*", SearchOption.TopDirectoryOnly);
+                foreach (var client in clients)
                 {
-                    MoveFile(clientFile, Path.Combine(Folder, "Permanent", clientCode));
+                    var clientCode = Path.GetFileName(client);
+                    if (rgxDigit.IsMatch(clientCode) || clientCode == "Permanent")
+                        continue;
+
+                    var clientFiles = Directory.EnumerateFiles(client, "*.*", SearchOption.TopDirectoryOnly);
+                    var clientFolders = Directory.EnumerateDirectories(client, "*", SearchOption.TopDirectoryOnly);
+
+                    foreach (var clientFile in clientFiles)
+                    {
+                        MoveFile(clientFile, Path.Combine(Folder, "Permanent", clientCode));
+                    }
+
+                    foreach (var clientFolder in clientFolders)
+                    {
+                        var lastPath = Path.GetFileName(clientFolder).Trim();
+                        if (rgxDigit.IsMatch(lastPath))
+                        {
+                            var year = rgxDigit.Match(lastPath);
+                            RoboCopy(clientFolder, Path.Combine(Folder, year.Groups[0].Value, clientCode));
+                        }
+                        else if (lastPath.ToLower() == "permanent")
+                        {
+                            RoboCopy(clientFolder, Path.Combine(Folder, "Permanent", clientCode));
+                        }
+                        else
+                        {
+                            RoboCopy(clientFolder, Path.Combine(Folder, "Permanent", clientCode, lastPath));
+                        }
+                    }
+                }
+                // Cleanup
+
+                var directories = Directory.EnumerateDirectories(Folder);
+                foreach (var directory in directories)
+                {
+                    var lastPart = Path.GetFileName(directory);
+                    if (lastPart.Contains("Permanent") || rgxDigit.IsMatch(lastPart))
+                        continue;
+                    Directory.Delete(directory, true);
                 }
 
-                foreach (var clientFolder in clientFolders)
-                {
-                    var lastPath = Path.GetFileName(clientFolder).Trim();
-                    if (rgxDigit.IsMatch(lastPath))
-                    {
-                        var year = rgxDigit.Match(lastPath);
-                        RoboCopy(clientFolder, Path.Combine(Folder, year.Groups[0].Value, clientCode));
-                    }
-                    else if (lastPath.ToLower() == "permanent")
-                    {
-                        RoboCopy(clientFolder, Path.Combine(Folder, "Permanent", clientCode));
-                    }
-                    else
-                    {
-                        RoboCopy(clientFolder, Path.Combine(Folder, "Permanent", clientCode, lastPath));
-                    }
-                }
+                Debug.WriteLine("Swap Operation Completed!");
+                await _dialogCoordinator.ShowMessageAsync(this, "Success", "Swap Operation Completed!");
             }
-            // Cleanup
-
-            var directories = Directory.EnumerateDirectories(Folder);
-            foreach (var directory in directories)
+            catch (Exception e)
             {
-                var lastPart = Path.GetFileName(directory);
-                if (lastPart.Contains("Permanent") || rgxDigit.IsMatch(lastPart))
-                    continue;
-                Directory.Delete(directory, true);
+                Debug.WriteLine(e);
             }
         }
         protected override void OnViewReady(object view)
